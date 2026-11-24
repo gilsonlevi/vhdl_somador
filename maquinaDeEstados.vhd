@@ -1,6 +1,8 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
+-- Representa o bloco da maquina que recebe o clock (CLK), o reset (RESET) e a entrada S e tem como saída o LED
+
 entity maquinaDeEstados is
     Port (
         CLK    : in  STD_LOGIC;
