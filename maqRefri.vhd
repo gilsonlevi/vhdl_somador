@@ -1,5 +1,6 @@
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.NUMERIC_STD.ALL;
 
 -- Representa o bloco da maquina que recebe o clock (CLK), o reset (RESET) e a entrada S e tem como saída o LED
 
@@ -17,7 +18,6 @@ entity maqRefri is
 
 -- Reseta a maquina fazendo voltar para o inicio
 		RESET	: in STD_LOGIC;
-
 
 -- Quais moedas foram colocadas
         C1    : in  STD_LOGIC;
@@ -45,26 +45,67 @@ architecture comportamento of maqRefri is
 -- MOEDA_COLETADA
 -- LIBERA_DOCE 
 
-type estado is (ESPERA, VERIFICA_COMPRA, MOEDA_COLETADA, LIBERA_DOCE );
+type estado is (ESPERA, MOEDA_COLETADA , VERIFICA_COMPRA, LIBERA_DOCE );
 
 SIGNAL estado_atual : estado;
 SIGNAL proximo_estado : estado;
+
+SIGNAL saldo : UNSIGNED(7 DOWNTO 0);
+SIGNAL valor_moeda : UNSIGNED(7 DOWNTO 0);
+
+SIGNAL Cin_anterior : STD_LOGIC;
+SIGNAL moeda_detectada : STD_LOGIC;
+
 
 begin
 
 PROCESS (CLK, RESET)
 BEGIN
--- Faz com que se o RESET seja igual a 1, a máquina reinicia para estado DESLIGADO
-    IF RESET = '1' THEN
-        estado_atual <= DESLIGADO;
+-- Faz com que se o RESET seja igual a 1, a máquina reinicia para estado ESPERA
+-- Resetar o valor de D
+	IF RESET = '1' THEN
+        estado_atual <= ESPERA;
 
     ELSIF rising_edge(CLK) THEN
         estado_atual <= proximo_estado;
     END IF;
 END PROCESS;
 
+PROCESS (estado_atual, C1, C0, Cin, S)
+BEGIN 
 
- 
+	CASE estado_atual IS
+
+		WHEN ESPERA =>
+			R <= '0';
+			IF Cin = '1' AND S = '0' THEN
+				proximo_estado <= MOEDA_COLETADA;
+			ELSIF S = '1' THEN
+				proximo_estado <= VERIFICA_COMPRA;
+			ELSE 
+				proximo_estado <= estado_atual;
+			END IF;
+
+		WHEN MOEDA_COLETADA =>
+-- Registrar o valor de C1C0 em D
+
+			proximo_estado <= ESPERA;
+
+		WHEN VERIFICA_COMPRA =>
+			saldo <= D;
+			IF saldo >= TO_UNSIGNED(80, 8) THEN
+				proximo_estado <= LIBERA_DOCE;
+			ELSE
+				proximo_estado <= ESPERA;
+-- Comparar o vetor D com o valor 80
+-- Se vetor D for igual ou maior que 80 ir para LIBERA_DOCE
+
+		WHEN LIBERA_DOCE =>
+-- Descontar 80 do vetor D
+			R <= '1';
+			proximo_estado <= ESPERA;
+	END CASE;
+END PROCESS;
 end comportamento;
 
 
