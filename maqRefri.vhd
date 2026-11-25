@@ -56,8 +56,10 @@ SIGNAL valor_moeda : UNSIGNED(7 DOWNTO 0);
 SIGNAL Cin_anterior : STD_LOGIC;
 SIGNAL moeda_detectada : STD_LOGIC;
 
-
 begin
+
+	-- MOSTRA A QUANTIDADE DE DINHEIRO COLOCADA ATÉ AGORA
+	D <= STD_LOGIC_VECTOR(saldo);
 
 PROCESS (CLK, RESET)
 BEGIN
@@ -65,7 +67,6 @@ BEGIN
 -- Resetar o valor de D
 	IF RESET = '1' THEN
         estado_atual <= ESPERA;
-
     ELSIF rising_edge(CLK) THEN
         estado_atual <= proximo_estado;
     END IF;
@@ -73,6 +74,13 @@ END PROCESS;
 
 PROCESS (estado_atual, C1, C0, Cin, S)
 BEGIN 
+
+	CASE C1 & C0 IS
+        WHEN "00" => valor_moeda <= TO_UNSIGNED(0, 8);
+        WHEN "01" => valor_moeda <= TO_UNSIGNED(5, 8);
+        WHEN "10" => valor_moeda <= TO_UNSIGNED(10, 8);
+        WHEN "11" => valor_moeda <= TO_UNSIGNED(25, 8);
+        WHEN OTHERS => valor_moeda <= TO_UNSIGNED(0, 8);
 
 	CASE estado_atual IS
 
@@ -87,25 +95,30 @@ BEGIN
 			END IF;
 
 		WHEN MOEDA_COLETADA =>
+			saldo <= saldo + valor_moeda;
+
 -- Registrar o valor de C1C0 em D
 
 			proximo_estado <= ESPERA;
 
 		WHEN VERIFICA_COMPRA =>
-			saldo <= D;
 			IF saldo >= TO_UNSIGNED(80, 8) THEN
 				proximo_estado <= LIBERA_DOCE;
 			ELSE
 				proximo_estado <= ESPERA;
+			END IF;
 -- Comparar o vetor D com o valor 80
 -- Se vetor D for igual ou maior que 80 ir para LIBERA_DOCE
 
 		WHEN LIBERA_DOCE =>
--- Descontar 80 do vetor D
+-- Descontar 80 do vetor 
+			saldo <= saldo - TO_UNSIGNED(80, 8);
 			R <= '1';
 			proximo_estado <= ESPERA;
 	END CASE;
+
 END PROCESS;
+
 end comportamento;
 
 
